@@ -12,7 +12,7 @@ char ** mp_arr;
 char cwd[2000];
 int num_of_tokens;
 int num_of_paths;
-int debug = 0;
+int debug = 1;
 
 void init(char ** input)//initializes dynamic memory
 {
@@ -130,23 +130,23 @@ int directory_finder(char * com, char * exec)//finds if a command exe is in a di
         strcat(word,"/");
         strcat(word,com);
         if(debug){printf("checking for: %s\n",word);}
-        
+
         status = lstat(word, &file_info);
         if(debug){if(status == 0){printf("found!\n");}else{printf("not found!\n");}}
-        
+
         if(status == 0)
         {
             strcpy(exec,word);
             free(word);
             return 0;
         }
-        
+
         i++;
     }
-    
+
     free(word);
     return -1;
-    
+
 }
 
 void handle_cd(char * word)
@@ -170,7 +170,7 @@ void handle_exec_no_pipe(char ** input, int waitbool)
     int found = directory_finder(input[0],exec);
     if(found == 0)
     {
-        
+
         pid_t pid;
         pid = fork();
         int status;
@@ -186,7 +186,7 @@ void handle_exec_no_pipe(char ** input, int waitbool)
                 printf("[running background process \"%s\"]\n",input[0]);
 //                waitpid(pid, &status , WNOHANG);
 //                printf("here! child terminated\n");
-                free(exec);                
+                free(exec);
             }
 
         }
@@ -209,7 +209,7 @@ void handle_exec_no_pipe(char ** input, int waitbool)
     else
     {
         free(exec);
-        perror("ERROR: command \"%s\" not found\n",input[0]);
+        fprintf(stderr,"ERROR: command \"%s\" not found\n",input[0]);
     }
 }
 
@@ -217,7 +217,7 @@ void check_for_children()
 {
     int status = 0;
     int retval = 0;
-    
+
     while(1)
     {
         retval = waitpid(-1, &status , WNOHANG);
@@ -227,7 +227,7 @@ void check_for_children()
         }
         else{return;}
     }
-    
+
 }
 
 int parse(char ** input)//parses user input to run commands
@@ -236,8 +236,8 @@ int parse(char ** input)//parses user input to run commands
     int and_count = 0;
     int pipe_count = 0;
     int pipe_token = 0;
-    
-    while (i<num_of_tokens) //checks 
+
+    while (i<num_of_tokens) //checks
     {
         if (strcmp("exit",input[i])==0){return -1;}
         else if (strcmp("|",input[i])==0){pipe_count++; pipe_token = i;}
@@ -273,7 +273,7 @@ int parse(char ** input)//parses user input to run commands
         int k = 0;
         int p[2];
         pipe(p);
- 
+
         char ** input_left  = (char**)calloc(pipe_token,sizeof(char*));
         char ** input_right = (char**)calloc(num_of_tokens+ 2 - pipe_token,sizeof(char*));
         while(k<pipe_token)
@@ -284,19 +284,19 @@ int parse(char ** input)//parses user input to run commands
         }
         k++;// skip pipe token
         while(k<num_of_tokens)
-        {   
+        {
             input_right[k-pipe_token-1] = (char*)calloc(1,(strlen(input[k])+1)*sizeof(char));
             strcpy(input_right[k-pipe_token-1],input[k]);
             k++;
         }
         char* exec1 =  (char*)calloc(1,1000*sizeof(char));
         char* exec2 =  (char*)calloc(1,1000*sizeof(char));
-        int found1 = directory_finder(input_left[0],exec1);       
-        int found2 = directory_finder(input_right[0],exec2); 
+        int found1 = directory_finder(input_left[0],exec1);
+        int found2 = directory_finder(input_right[0],exec2);
         if((found1 == 0) & (found2 == 0 ))
         {
             pid_t pidl, pidr;
-            
+
             pidl = fork();
             if(pidl == 0)
             {
@@ -340,7 +340,7 @@ int parse(char ** input)//parses user input to run commands
 
 //                        waitpid(pidr, &status2 , WNOHANG);
                     }
-                    
+
                     int h = 0;
                     while(h < pipe_token)
                     {
@@ -364,11 +364,11 @@ int parse(char ** input)//parses user input to run commands
         {
             if(found1 == -1)
             {
-                perror("ERROR: command \"%s\" not found\n",input_left[0]);
+                fprintf(stderr,"ERROR: command \"%s\" not found\n", input_left[0]);
             }
             if(found2 == -1)
             {
-                perror("ERROR: command \"%s\" not found\n",input_right[0]);
+                fprintf(stderr,"ERROR: command \"%s\" not found\n", input_right[0]);
             }
             int h = 0;
             while(h < pipe_token)
@@ -401,7 +401,7 @@ int main(void)
     setvbuf( stdout, NULL, _IONBF, 0 );
     MYPATH = (char*)calloc(1,257*sizeof(char));
     char* quick = getenv("MYPATH");
-    
+
     if (quick==NULL){quick = "/bin#";}
     strcpy(MYPATH,quick);
 //    printf("Mypath set to %s\n", MYPATH);
